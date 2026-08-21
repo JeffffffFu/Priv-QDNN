@@ -1,8 +1,8 @@
 # Priv-QDNN
 
-This repository contains a research codebase for **privacy evaluation of quantized deep neural networks**. It supports training target/shadow models under common post-training quantization (PTQ) and quantization-aware training (QAT) settings, saving intermediate attack features to disk, and running a suite of **membership-inference-related** attacks and metrics (e.g., `MIA`, `RMIA`, `WhiteBoxMIA`, `WhiteBoxMIA_Partial`). The attack-only `MIA` pipeline uses black-box inference-time outputs (e.g., saved posteriors / confidence-style signals), not white-box gradients or full internal activations of the target model. The codebase also integrates **Opacus**-based differential privacy training paths for defended models (e.g., dropout / DP / adversarial variants in the provided example scripts).
+This repository contains a research codebase for **privacy evaluation of quantized deep neural networks**. It supports training target/shadow models under common post-training quantization (PTQ) and quantization-aware training (QAT) settings, saving intermediate attack features to disk, and running a suite of **membership-inference-related** attacks and metrics (e.g., `MIA`, `RMIA`, `WhiteBoxMIA`, `WhiteBoxMIA_Partial`). The codebase also integrates **Opacus**-based differential privacy training paths for defended models (e.g., dropout / DP / adversarial variants in the provided example scripts).
 
-The evaluation workflow is split into two stages: **(1) training** (`--training target|shadow|both`) to materialize `save/<attack_method>/...` artifacts, and **(2) attack-only evaluation** (`--training None`) that loads saved posteriors/models and reports metrics under `result/MIA/...`.
+The evaluation workflow is split into two stages: **(1) training** (`--training target|shadow|both`) to materialize `save/<attack_method>/...` artifacts, and **(2) attack-only evaluation** (`--training None`) that loads saved posteriors/models and reports metrics under `result/<attack_method>/...`.
 
 ## Installation
 
@@ -21,25 +21,70 @@ Notes:
 - For **CPU-only** PyTorch, run `pip install -r requirements.txt` without `--extra-index-url` (PyPI CPU wheels if available for your platform).
 - If you use **AdaRound / AIMET** quantization paths, you need a working `aimet-torch` install (see `quantization/PTQ/adaround.py`). If `pip` cannot resolve `aimet-torch` on your platform, follow Qualcomm AIMET installation instructions first, then install the remaining dependencies.
 
+## Datasets
+
+Datasets are **not** included in this repository. Four are supported, and they differ in how much setup they need.
+
+### CIFAR-100 and CINIC-10 (automatic)
+
+Both are fetched on first use into `data/`, so no manual step is required — just make sure the machine has network access the first time you run an experiment.
+
+- **CIFAR-100** is downloaded by `torchvision.datasets.CIFAR100(..., download=True)` in `data/load_data.py`.
+- **CINIC-10** is downloaded and extracted by `fetch_cinic10()` in `data/cinic10.py` from the Edinburgh DataShare mirror. It is a large archive, so budget time and disk for the first run.
+
+### Texas100 and Location (manual)
+
+These two have no automatic downloader. Fetch the raw archives, unpack them under `data/<dataset>/raw/`, then convert them to the `.npy` files the loaders expect.
+
+| Dataset | Raw archive |
+| --- | --- |
+| Texas100 | <https://www.comp.nus.edu.sg/~reza/files/dataset_texas.tgz> |
+| Location | <https://github.com/privacytrustlab/datasets> (the `location` set) |
+
+Expected layout after unpacking:
+
+```
+data/texas/raw/texas/100/feats
+data/texas/raw/texas/100/labels
+data/location/raw/bangkok
+```
+
+Then build the train/test splits:
+
+```bash
+python data/prepare_tabular.py --dataset both
+```
+
+`--dataset` accepts `texas`, `location`, or `both`. Use `--raw_root` to point at a different location (default `data/<dataset>/raw`), and `--test_size` / `--seed` to change the split (defaults `0.2` and `41`).
+
+This writes the files that `data/tabular_datasets.py` loads:
+
+```
+data/<dataset>/{train_feats,train_labels,test_feats,test_labels}.npy
+```
+
+If these `.npy` files are missing, any run using `--dataset_name texas` or `--dataset_name location` fails with a `FileNotFoundError` that names the missing path.
+
 ## Code Structure of Priv-QDNN
 
-- `**attack`**: attack implementations and evaluation entry points (`MIA`, `RMIA`, `WhiteBox_MIA`, etc.).
-- `**training`**: target/shadow training loops and defended training variants (DP / adversarial branches, utilities).
-- `**model`**: model definitions and wrappers used by training and attacks.
-- `**quantization**`: PTQ/QAT quantization pipelines and helpers (including AIMET AdaRound integration).
-- `**data**`: dataset download helpers and PyTorch `Dataset` wrappers.
-- `**dp**`: differential privacy utilities used by DP training paths.
-- `**example**`: shell scripts for end-to-end experiments (MIA data collection + attack-only evaluation / defenses).
-- `**main.py**`: unified CLI entry (`--training` switches between training and attack-only modes).
-- `**parameter_parser.py**`: all command-line arguments and defaults.
+- **`attack`**: attack implementations and evaluation entry points (`MIA`, `RMIA`, `WhiteBox_MIA`, etc.).
+- **`training`**: target/shadow training loops and defended training variants (DP / adversarial branches, utilities).
+- **`model`**: model definitions and wrappers used by training and attacks.
+- **`quantization`**: PTQ/QAT quantization pipelines and helpers (including AIMET AdaRound integration).
+- **`data`**: dataset download helpers, preparation scripts, and PyTorch `Dataset` wrappers.
+- **`dp`**: differential privacy utilities used by DP training paths.
+- **`example`**: shell scripts for end-to-end experiments (MIA data collection + attack-only evaluation / defenses).
+- **`experiment`**: mechanistic studies behind the paper's analysis — LOOD-style memorization scores (`memorization.py`) and the gradient-norm quantization tables (`grad_norm_quantization_table.py`, `grad_norm_range_normalized_table.py`).
+- **`plot`**: figure and table generation for the paper; output PDFs and CSVs land in `plot/figures/`.
+- **`main.py`**: unified CLI entry (`--training` switches between training and attack-only modes).
+- **`parameter_parser.py`**: all command-line arguments and defaults.
+- **`extract_last_layer_grad_norm.py`**: per-sample L2 norms of the last-layer classifier gradient for member and non-member subsets, reused by the `experiment/` tables.
 
 ## Demo Experiments
 
 ### Membership inference data collection + attack-only MIA (CIFAR-100)
 
-The attack-only `MIA` entry in this repo runs a **black-box membership inference pipeline**: stage 2 below only consumes artifacts such as saved posteriors / confidence-based features—no white-box access to the target network during the attack.
-
-The following pattern matches the repository’s intended workflow: **train with `MIA` to populate `save/MIA/...`**, then run `MIA` with `--training None`.
+The following pattern matches the repository's intended workflow: **train with `MIA` to populate `save/MIA/...`**, then run `MIA` with `--training None`.
 
 ```bash
 # Stage 1: train target + shadow and save MIA artifacts
@@ -52,18 +97,30 @@ python main.py \
   --num_epochs 50 --trials 3 \
   --device cuda:0
 
-# Stage 2: attack-only MIA evaluation
+# Stage 2: attack-only MIA evaluation (confidence threshold attack only)
 python main.py \
   --dataset_name cifar100 \
   --net_name resnet18 \
   --quantization hawq --a_bit 8 --w_bit 8 \
   --attack_method MIA \
+  --compleaknr_attacks confidence \
   --training None \
   --trials 3 \
   --device cuda:0
 ```
 
 For each attack run, the console will print progress from the corresponding attack implementation (e.g., trial-wise metrics for `MIA`; attack-only runs save to `result/MIA/...`).
+
+#### Choosing which black-box attacks to run
+
+`--compleaknr_attacks` controls the attack-only `MIA` entry:
+
+- **`confidence`** — runs only the confidence threshold attack. It consumes just the saved posteriors, so it is fast and needs no model files.
+- **`all`** (the argument's default) — runs all six black-box variants: confidence threshold, entropy threshold, modified entropy, two train-based attacks (LR/RF on posteriors, and on posteriors plus label), and SAMIA.
+
+Note that the two modes have different requirements. The first five variants read only the saved posteriors, but **SAMIA additionally loads the saved target and shadow models** from `save/MIA/.../target/<trial>/model.pth` and `save/MIA/.../shadow/0/model.pth` and queries them on perturbed inputs to estimate output sensitivity. This is still black-box in the sense that only model outputs are used — no gradients or internal activations — but it does require those checkpoints to be present, and it is considerably slower.
+
+If you omit `--compleaknr_attacks`, all six run. Pass `confidence` explicitly, as above, when you only want the fast path or when the model checkpoints are unavailable.
 
 ### Batch scripts (defense + MIA)
 
@@ -82,8 +139,7 @@ Edit device IDs (`cuda:*`) and hyper-parameters inside those scripts for your cl
 
 ### Defense examples (CIFAR-100)
 
-Below are minimal examples for defended models. For black-box MIA, this repo uses
-`--compleaknr_attacks confidence` in attack-only mode.
+Below are minimal examples for defended models, using `--compleaknr_attacks confidence` in attack-only mode.
 
 ```bash
 # Dropout defense (resnet18_drop010): train target, then black-box confidence attack
@@ -109,7 +165,7 @@ This repo provides two white-box attack entries:
 - `WhiteBoxMIA`: shadow-based white-box MIA (train attack model on shadow features, evaluate on target features).
 - `WhiteBoxMIA_Partial`: target-only split mode (no shadow model required; split target features for train/test).
 
-You can run them after stage-1 artifacts are ready under `save/MIA/...`:
+Both load the saved models from `save/MIA/...`, so run them after stage 1 has completed:
 
 ```bash
 # WhiteBoxMIA (shadow mode)
@@ -132,3 +188,19 @@ python main.py \
   --trials 3 \
   --device cuda:0
 ```
+
+Results are written to `result/WhiteBoxMIA/...` and `result/WhiteBoxMIA_Partial/...`.
+
+## Notes on defaults
+
+The commands above spell out most arguments rather than relying on defaults. A few worth knowing when adapting them (see `parameter_parser.py` for the full list):
+
+| Argument | Default | Note |
+| --- | --- | --- |
+| `--trials` | `5` | the examples above use `3` or `1` to keep runtimes short |
+| `--num_epochs` | `50` | |
+| `--batch_size` | `256` | |
+| `--optim` / `--lr` | `Adam` / `0.001` | |
+| `--random` | `41` | seed for the target/shadow data split; must match between stage 1 and stage 2 |
+| `--compleaknr_attacks` | `all` | see the section above |
+| `--dataset_name` | `cifar100` | `--dataset` is an accepted alias |
