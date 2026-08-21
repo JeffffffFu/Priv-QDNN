@@ -1,0 +1,20 @@
+# Experiment artifacts -- kept local, not published
+/save/
+/result/
+
+# Datasets: downloaded by data/load_data.py and data/cinic10.py, or rebuilt by
+# data/prepare_tabular.py. See the Installation section of README.md.
+# Only the loader scripts under data/ are tracked.
+/data/*
+!/data/*.py
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# OS and editor junk
+.DS_Store
+*~
+
+# IDE settings
+/.idea/

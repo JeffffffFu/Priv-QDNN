@@ -1,0 +1,15 @@
+Method,Attack,attack_accuracy_mean,std
+Full-precision,SAMIA,87.1,0.4
+Full-precision,WB-P,89.0,0.9
+PQ,SAMIA,81.7,0.8
+PQ,WB-P,84.3,0.8
+AdaRound,SAMIA,81.9,0.3
+AdaRound,WB-P,83.9,0.6
+QDrop,SAMIA,82.1,0.6
+QDrop,WB-P,85.7,0.2
+HAWQ,SAMIA,85.6,0.9
+HAWQ,WB-P,88.5,1.1
+PACT,SAMIA,86.3,0.1
+PACT,WB-P,88.3,0.3
+BSQ,SAMIA,69.3,1.2
+BSQ,WB-P,78.5,1.9

@@ -1,0 +1,70 @@
+{
+    "param_encodings": {
+        "model.hidden_fc1.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.04537349194288254,
+                "min": -0.05185541883111,
+                "offset": -8,
+                "scale": 0.00648192735388875
+            }
+        ],
+        "model.hidden_fc2.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.05724392086267471,
+                "min": -0.06542162597179413,
+                "offset": -8,
+                "scale": 0.008177703246474266
+            }
+        ],
+        "model.hidden_fc3.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.06903088837862015,
+                "min": -0.07889244705438614,
+                "offset": -8,
+                "scale": 0.009861555881798267
+            }
+        ],
+        "model.hidden_fc4.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.08756716549396515,
+                "min": -0.10007676482200623,
+                "offset": -8,
+                "scale": 0.012509595602750778
+            }
+        ],
+        "model.input_fc.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.09474808722734451,
+                "min": -0.10828352719545364,
+                "offset": -8,
+                "scale": 0.013535440899431705
+            }
+        ],
+        "model.output_fc.weight": [
+            {
+                "bitwidth": 4,
+                "dtype": "int",
+                "is_symmetric": "True",
+                "max": 0.15686392784118652,
+                "min": -0.17927305400371552,
+                "offset": -8,
+                "scale": 0.02240913175046444
+            }
+        ]
+    }
+}
