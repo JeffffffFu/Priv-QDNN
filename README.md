@@ -1,5 +1,6 @@
 # Priv-QDNN
-This is the offical code of Paper <<Revisiting Privacy Risks in Quantized Deep Neural Networks>>
+This is the offical code of Paper "Revisiting Privacy Risks in Quantized Deep Neural Networks" 
+
 This repository contains a research codebase for **privacy evaluation of quantized deep neural networks**. It supports training target/shadow models under common post-training quantization (PTQ) and quantization-aware training (QAT) settings, saving intermediate attack features to disk, and running a suite of **membership-inference-related** attacks and metrics (e.g., `MIA`, `RMIA`, `WhiteBoxMIA`, `WhiteBoxMIA_Partial`). The codebase also integrates **Opacus**-based differential privacy training paths for defended models (e.g., dropout / DP / adversarial variants in the provided example scripts).
 
 The evaluation workflow is split into two stages: **(1) training** (`--training target|shadow|both`) to materialize `save/<attack_method>/...` artifacts, and **(2) attack-only evaluation** (`--training None`) that loads saved posteriors/models and reports metrics under `result/<attack_method>/...`.
